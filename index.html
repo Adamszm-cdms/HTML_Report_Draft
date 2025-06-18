@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Report Exporter</title>
     <style>
-        /* style.css */
-
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f4f4f4;
@@ -98,7 +96,6 @@
 
         <div id="status" class="status-message"></div>
 
-        <!-- Configuration section (you'll customize these URLs) -->
         <div id="config" style="display: none;">
             <!-- We'll store our layer URLs here for easy editing -->
         </div>
@@ -113,61 +110,12 @@
             "esri/layers/FeatureLayer",
             "esri/rest/query",
             "esri/rest/support/Query",
-            "esri/identity/IdentityManager",
             "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-        ], function (FeatureLayer, query, Query, esriId, jsPDFModule) {
+        ], function (FeatureLayer, query, Query, jsPDFModule) {
             const exportBtn = document.getElementById('exportBtn');
             const buttonText = document.getElementById('buttonText');
             const loadingSpinner = document.getElementById('loadingSpinner');
             const statusDiv = document.getElementById('status');
-
-            // Get token from the dashboard context
-            let token = null;
-            
-            // Try to get token from parent dashboard
-            function getTokenFromDashboard() {
-                try {
-                    // Method 1: Try to get from parent's IdentityManager
-                    if (window.parent && window.parent.require) {
-                        window.parent.require(["esri/identity/IdentityManager"], function(parentEsriId) {
-                            const credentials = parentEsriId.credentials;
-                            if (credentials && credentials.length > 0) {
-                                token = credentials[0].token;
-                                console.log("Token retrieved from parent dashboard");
-                            }
-                        });
-                    }
-                    
-                    // Method 2: Try to get from current context
-                    if (!token) {
-                        const credentials = esriId.credentials;
-                        if (credentials && credentials.length > 0) {
-                            token = credentials[0].token;
-                            console.log("Token retrieved from current context");
-                        }
-                    }
-                    
-                    // Method 3: Try to get from parent window's esriConfig
-                    if (!token && window.parent && window.parent.esriConfig) {
-                        token = window.parent.esriConfig.apiKey;
-                        console.log("Token retrieved from parent esriConfig");
-                    }
-                    
-                    // Method 4: Check URL parameters
-                    if (!token) {
-                        const urlParams = new URLSearchParams(window.location.search);
-                        token = urlParams.get('token');
-                        if (token) {
-                            console.log("Token retrieved from URL parameters");
-                        }
-                    }
-                    
-                } catch (e) {
-                    console.log("Could not access parent token:", e);
-                }
-                
-                return token;
-            }
 
             exportBtn.addEventListener('click', generateReport);
 
@@ -178,25 +126,13 @@
                     loadingSpinner.style.display = 'inline-block';
                     exportBtn.disabled = true;
 
-                    // Get token from dashboard
-                    token = getTokenFromDashboard();
-
                     // CUSTOMIZE THIS: Replace with your actual layer URLs from your dashboard
                     const layerUrl = "https://services1.arcgis.com/VVapzOPgBae5joyC/arcgis/rest/services/MDC_Field_Work_Database/FeatureServer/0";
 
-                    // Create layer configuration with token if available
-                    const layerConfig = { url: layerUrl };
-                    
-                    if (token) {
-                        // Try different methods to pass the token
-                        layerConfig.customParameters = { token: token };
-                        console.log("Using token for authentication");
-                    } else {
-                        console.log("No token found, proceeding without authentication");
-                    }
-
                     // Query the data
-                    const featureLayer = new FeatureLayer(layerConfig);
+                    const featureLayer = new FeatureLayer({
+                        url: layerUrl
+                    });
 
                     const queryParams = new Query({
                         where: "1=1", // Adjust this query as needed
@@ -213,11 +149,6 @@
                 } catch (error) {
                     console.error('Error generating report:', error);
                     statusDiv.textContent = 'Error generating report. Please try again.';
-                    
-                    // If authentication error, provide more specific message
-                    if (error.message && error.message.includes('Token')) {
-                        statusDiv.textContent = 'Authentication error. Please refresh the dashboard and try again.';
-                    }
                 } finally {
                     buttonText.textContent = 'Generate PDF Report';
                     loadingSpinner.style.display = 'none';
@@ -264,5 +195,4 @@
         });
     </script>
 </body>
-
 </html>
