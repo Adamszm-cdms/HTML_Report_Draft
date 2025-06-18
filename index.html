@@ -5,505 +5,198 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Report Exporter</title>
     <style>
+        /* style.css */
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
             margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-            line-height: 1.6;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
 
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 30px;
+            background-color: #fff;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 3px solid #2c3e50;
-            padding-bottom: 20px;
-        }
-
-        .header h1 {
-            color: #2c3e50;
-            margin: 0 0 10px 0;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .header p {
-            color: #7f8c8d;
-            margin: 0;
-            font-size: 16px;
-        }
-
-        .controls {
-            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             padding: 20px;
-            background-color: #ecf0f1;
-            border-radius: 6px;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
         }
 
-        .controls label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .controls input {
-            width: 100%;
-            max-width: 400px;
-            padding: 12px;
-            border: 2px solid #bdc3c7;
-            border-radius: 4px;
-            font-size: 14px;
-            margin-bottom: 15px;
-        }
-
-        .controls input:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-
-        .controls button {
-            background-color: #3498db;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
-        .controls button:hover {
-            background-color: #2980b9;
-        }
-
-        .report-content {
-            display: none;
-        }
-
-        .section {
-            margin-bottom: 30px;
-            break-inside: avoid;
-        }
-
-        .section-title {
-            background-color: #34495e;
-            color: white;
-            padding: 12px 20px;
-            margin: 0 0 20px 0;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 4px;
-        }
-
-        .field-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+        h2 {
+            color: #333;
             margin-bottom: 20px;
         }
 
-        .field-item {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            border-left: 4px solid #3498db;
+        p {
+            color: #666;
+            margin-bottom: 30px;
         }
 
-        .field-label {
+        .export-button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .export-button:hover {
+            background-color: #0056b3;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-message {
+            margin-top: 20px;
+            color: #4CAF50;
             font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-
-        .field-value {
-            color: #34495e;
-            font-size: 14px;
-            word-wrap: break-word;
-        }
-
-        .full-width {
-            grid-column: 1 / -1;
-        }
-
-        @media print {
-            body {
-                background-color: white;
-                padding: 0;
-            }
-
-            .container {
-                box-shadow: none;
-                padding: 20px;
-            }
-
-            .controls {
-                display: none;
-            }
-
-            .report-content {
-                display: block !important;
-            }
-
-            .section {
-                page-break-inside: avoid;
-            }
-
-            .field-grid {
-                grid-template-columns: 1fr 1fr !important;
-                gap: 15px;
-            }
-
-            .field-item {
-                padding: 10px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .field-grid {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
+    <!-- ArcGIS API for JavaScript -->
+    <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
 </head>
+
 <body>
     <div class="container">
-        <div class="header">
-            <h1>Dashboard Report</h1>
-            <p>Professional Asset Management Report</p>
-        </div>
+        <h2>Export Dashboard Report</h2>
+        <p>Click the button below to generate and download a PDF report based on current dashboard data.</p>
 
-        <div class="controls">
-            <label for="globalId">Enter Global ID:</label>
-            <input type="text" id="globalId" placeholder="e.g., {76f56875-06d7-4f14-acec-daf2a592fe17}">
-            <button onclick="generateReport()">Generate Report</button>
-            <button onclick="window.print()">Print/Save as PDF</button>
-        </div>
+        <button id="exportBtn" class="export-button">
+            <span id="buttonText">Generate PDF Report</span>
+            <span id="loadingSpinner" class="spinner" style="display: none;">⏳</span>
+        </button>
 
-        <div class="report-content" id="reportContent">
-            <!-- Basic Information -->
-            <div class="section">
-                <h2 class="section-title">Basic Information</h2>
-                <div class="field-grid">
-                    <div class="field-item">
-                        <div class="field-label">Global ID</div>
-                        <div class="field-value" id="field-GlobalID">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Object ID</div>
-                        <div class="field-value" id="field-OBJECTID">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Asset ID</div>
-                        <div class="field-value" id="field-AssetID">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Legacy ID</div>
-                        <div class="field-value" id="field-LegacyID">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Location</div>
-                        <div class="field-value" id="field-Location">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Status</div>
-                        <div class="field-value" id="field-Status">-</div>
-                    </div>
-                </div>
-            </div>
+        <div id="status" class="status-message"></div>
 
-            <!-- Address Information -->
-            <div class="section">
-                <h2 class="section-title">Address Information</h2>
-                <div class="field-grid">
-                    <div class="field-item">
-                        <div class="field-label">Street Number</div>
-                        <div class="field-value" id="field-StreetNumber">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Street Name</div>
-                        <div class="field-value" id="field-StreetName">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Unit Number</div>
-                        <div class="field-value" id="field-UnitNumber">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">City</div>
-                        <div class="field-value" id="field-City">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">State</div>
-                        <div class="field-value" id="field-State">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">ZIP Code</div>
-                        <div class="field-value" id="field-ZipCode">-</div>
-                    </div>
-                    <div class="field-item full-width">
-                        <div class="field-label">Full Address</div>
-                        <div class="field-value" id="field-FullAddress">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Owner Information -->
-            <div class="section">
-                <h2 class="section-title">Owner Information</h2>
-                <div class="field-grid">
-                    <div class="field-item">
-                        <div class="field-label">Owner Name</div>
-                        <div class="field-value" id="field-OwnerName">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Owner Type</div>
-                        <div class="field-value" id="field-OwnerType">-</div>
-                    </div>
-                    <div class="field-item full-width">
-                        <div class="field-label">Owner Address</div>
-                        <div class="field-value" id="field-OwnerAddress">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Technical Specifications -->
-            <div class="section">
-                <h2 class="section-title">Technical Specifications</h2>
-                <div class="field-grid">
-                    <div class="field-item">
-                        <div class="field-label">Diameter</div>
-                        <div class="field-value" id="field-Diameter">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Material</div>
-                        <div class="field-value" id="field-Material">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Joint Type</div>
-                        <div class="field-value" id="field-JointType">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Lining Type</div>
-                        <div class="field-value" id="field-LiningType">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Pipe Class</div>
-                        <div class="field-value" id="field-PipeClass">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Pressure Zone</div>
-                        <div class="field-value" id="field-PressureZone">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Ground Surface Type</div>
-                        <div class="field-value" id="field-GroundSurfaceType">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Traffic Load</div>
-                        <div class="field-value" id="field-TrafficLoad">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Installation Details -->
-            <div class="section">
-                <h2 class="section-title">Installation Details</h2>
-                <div class="field-grid">
-                    <div class="field-item">
-                        <div class="field-label">Install Date</div>
-                        <div class="field-value" id="field-InstallDate">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Acceptance Date</div>
-                        <div class="field-value" id="field-AcceptanceDate">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Warranty Date</div>
-                        <div class="field-value" id="field-WarrantyDate">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Retirement Date</div>
-                        <div class="field-value" id="field-RetirementDate">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Install Method</div>
-                        <div class="field-value" id="field-InstallMethod">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Depth</div>
-                        <div class="field-value" id="field-Depth">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Operational Data -->
-            <div class="section">
-                <h2 class="section-title">Operational Data</h2>
-                <div class="field-grid">
-                    <div class="field-item">
-                        <div class="field-label">Enabled</div>
-                        <div class="field-value" id="field-Enabled">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Lifecycle Status</div>
-                        <div class="field-value" id="field-LifecycleStatus">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Subtype Code</div>
-                        <div class="field-value" id="field-SubtypeCode">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Water Type</div>
-                        <div class="field-value" id="field-WaterType">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Administrative Area</div>
-                        <div class="field-value" id="field-AdministrativeArea">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Facility ID</div>
-                        <div class="field-value" id="field-FacilityID">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Additional Information -->
-            <div class="section">
-                <h2 class="section-title">Additional Information</h2>
-                <div class="field-grid">
-                    <div class="field-item full-width">
-                        <div class="field-label">Comments</div>
-                        <div class="field-value" id="field-Comments">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Hyperlink</div>
-                        <div class="field-value" id="field-Hyperlink">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Last Update Date</div>
-                        <div class="field-value" id="field-LastUpdateDate">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Last Update User</div>
-                        <div class="field-value" id="field-LastUpdateUser">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Data Source</div>
-                        <div class="field-value" id="field-DataSource">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Data Accuracy</div>
-                        <div class="field-value" id="field-DataAccuracy">-</div>
-                    </div>
-                    <div class="field-item">
-                        <div class="field-label">Private</div>
-                        <div class="field-value" id="field-Private">-</div>
-                    </div>
-                </div>
-            </div>
+        <!-- Configuration section (you'll customize these URLs) -->
+        <div id="config" style="display: none;">
+            <!-- We'll store our layer URLs here for easy editing -->
         </div>
     </div>
 
+    <!-- External Libraries -->
+    <script src="https://js.arcgis.com/4.28/"></script>
+
+    <!-- Load our custom JavaScript using AMD -->
     <script>
-        function generateReport() {
-            const globalId = document.getElementById('globalId').value.trim();
+        require([
+            "esri/layers/FeatureLayer",
+            "esri/rest/query",
+            "esri/rest/support/Query",
+            "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+        ], function (FeatureLayer, query, Query, jsPDFModule) {
+            const exportBtn = document.getElementById('exportBtn');
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const statusDiv = document.getElementById('status');
 
-            if (!globalId) {
-                alert('Please enter a Global ID');
-                return;
-            }
+            exportBtn.addEventListener('click', generateReport);
 
-            // Format the Global ID properly for the query
-            let formattedGlobalId = globalId;
-            if (!globalId.startsWith('{')) {
-                formattedGlobalId = '{' + globalId;
-            }
-            if (!globalId.endsWith('}')) {
-                formattedGlobalId = formattedGlobalId + '}';
-            }
+            async function generateReport() {
+                try {
+                    statusDiv.textContent = ''; // Clear previous status
+                    buttonText.textContent = 'Generating...';
+                    loadingSpinner.style.display = 'inline-block';
+                    exportBtn.disabled = true;
 
-            // Show loading state
-            document.getElementById('reportContent').style.display = 'block';
+                    // CUSTOMIZE THIS: Replace with your actual layer URLs from your dashboard
+                    const layerUrl = "https://services1.arcgis.com/VVapzOPgBae5joyC/arcgis/rest/services/MDC_Field_Work_Database/FeatureServer/0";
 
-            // Here you would typically make an API call to your ArcGIS service
-            // For demonstration, we'll show the structure with sample data
+                    // Query the data
+                    const featureLayer = new FeatureLayer({
+                        url: layerUrl
+                    });
 
-            // Example query URL structure:
-            const queryUrl = `https://your-arcgis-server.com/arcgis/rest/services/YourService/MapServer/0/query?where=GlobalID='${formattedGlobalId}'&outFields=*&f=json`;
+                    const queryParams = new Query({
+                        where: "1=1", // Adjust this query as needed
+                        outFields: ["PARENT_Premise_Address"], // CUSTOMIZE: Add your field names here
+                        returnGeometry: false
+                    });
 
-            console.log('Query URL:', queryUrl);
+                    const results = await featureLayer.queryFeatures(queryParams);
 
-            // Sample data population (replace with actual API call)
-            populateSampleData(formattedGlobalId);
-        }
+                    // Generate PDF
+                    await createPDF(results.features);
 
-        function populateSampleData(globalId) {
-            // This is sample data - replace with actual API response handling
-            const sampleData = {
-                GlobalID: globalId,
-                OBJECTID: '12345',
-                AssetID: 'PIPE-001',
-                LegacyID: 'LEG-789',
-                Location: 'Main Street Intersection',
-                Status: 'Active',
-                StreetNumber: '123',
-                StreetName: 'Main Street',
-                UnitNumber: 'Unit A',
-                City: 'Sample City',
-                State: 'CA',
-                ZipCode: '90210',
-                FullAddress: '123 Main Street, Unit A, Sample City, CA 90210',
-                OwnerName: 'City Water Department',
-                OwnerType: 'Municipal',
-                OwnerAddress: '456 City Hall Drive, Sample City, CA 90210',
-                Diameter: '12 inches',
-                Material: 'Ductile Iron',
-                JointType: 'Push-On',
-                LiningType: 'Cement Mortar',
-                PipeClass: 'Class 52',
-                PressureZone: 'Zone A',
-                GroundSurfaceType: 'Asphalt',
-                TrafficLoad: 'Heavy',
-                InstallDate: '2020-05-15',
-                AcceptanceDate: '2020-06-01',
-                WarrantyDate: '2025-06-01',
-                RetirementDate: 'N/A',
-                InstallMethod: 'Open Cut',
-                Depth: '4.5 feet',
-                Enabled: 'Yes',
-                LifecycleStatus: 'In Service',
-                SubtypeCode: '1',
-                WaterType: 'Potable',
-                AdministrativeArea: 'District 1',
-                FacilityID: 'FAC-001',
-                Comments: 'Recently inspected and in good condition',
-                Hyperlink: 'https://example.com/asset/12345',
-                LastUpdateDate: '2024-01-15',
-                LastUpdateUser: 'admin',
-                DataSource: 'Field Survey',
-                DataAccuracy: 'High',
-                Private: 'No'
-            };
-
-            // Populate all fields
-            Object.keys(sampleData).forEach(key => {
-                const element = document.getElementById(`field-${key}`);
-                if (element) {
-                    element.textContent = sampleData[key] || '-';
+                    statusDiv.textContent = 'Report generated successfully!';
+                } catch (error) {
+                    console.error('Error generating report:', error);
+                    statusDiv.textContent = 'Error generating report. Please try again.';
+                } finally {
+                    buttonText.textContent = 'Generate PDF Report';
+                    loadingSpinner.style.display = 'none';
+                    exportBtn.disabled = false;
                 }
-            });
-        }
+            }
+
+            function createPDF(features) {
+                // jsPDF is under .jsPDF in the UMD build
+                const { jsPDF } = jsPDFModule;
+                const doc = new jsPDF();
+
+                // Add title
+                doc.setFontSize(20);
+                doc.text('Dashboard Report', 20, 20);
+
+                // Add date
+                doc.setFontSize(12);
+                doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 35);
+
+                // Add data
+                let yPosition = 50;
+                doc.setFontSize(14);
+                doc.text('Data Summary:', 20, yPosition);
+                yPosition += 10;
+
+                doc.setFontSize(10);
+                features.forEach((feature, index) => {
+                    if (yPosition > 270) { // Start new page if needed
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+
+                    // CUSTOMIZE: Modify this section based on your data structure
+                    const attributes = feature.attributes;
+                    const address = attributes.PARENT_Premise_Address || 'N/A';
+                    doc.text(`Record ${index + 1}: Address - ${address}`, 20, yPosition);
+                    yPosition += 8;
+                });
+
+                // Save the PDF
+                doc.save('dashboard-report.pdf');
+            }
+        });
     </script>
 </body>
+
 </html>
