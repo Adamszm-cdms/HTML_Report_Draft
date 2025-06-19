@@ -1,285 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Report Exporter</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .container {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            width: 80%;
-            max-width: 600px;
-            text-align: center;
-        }
-
-        h2 {
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        p {
-            color: #666;
-            margin-bottom: 30px;
-        }
-
-        .export-button {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 200px;
-        }
-
-        .export-button:hover {
-            background-color: #0056b3;
-        }
-
-        .export-button:disabled {
-            background-color: #6c757d;
-            cursor: not-allowed;
-        }
-
-        .spinner {
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-left-color: #fff;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-            margin-left: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .status-message {
-            margin-top: 20px;
-            padding: 10px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .status-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .status-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-    </style>
-    <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
+  <meta charset="UTF-8">
+  <title>ArcGIS PDF Export</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .container { background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 24px; max-width: 600px; width: 90%; text-align: center; }
+    .export-button { background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 12px 24px; font-size: 16px; cursor: pointer; }
+    .export-button:disabled { background: #6c757d; cursor: not-allowed; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #fff; border-left-color: #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin-left: 10px; }
+    @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+    .status-message { margin-top: 20px; font-weight: bold; }
+    .status-success { color: #155724; background: #d4edda; border: 1px solid #c3e6cb; padding: 8px; border-radius: 4px; }
+    .status-error { color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; padding: 8px; border-radius: 4px; }
+  </style>
+  <script src="https://js.arcgis.com/4.28/"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
-
 <body>
-    <div class="container">
-        <h2>Export Dashboard Report</h2>
-        <p>Click the button below to generate and download a PDF report based on current dashboard data.</p>
+  <div class="container">
+    <h2>Export Dashboard Report</h2>
+    <p>Click the button below to generate and download a PDF report based on current dashboard data.</p>
+    <button id="exportBtn" class="export-button">
+      <span id="buttonText">Generate PDF Report</span>
+      <span id="loadingSpinner" class="spinner" style="display:none;"></span>
+    </button>
+    <div id="status" class="status-message" style="display:none;"></div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      require([
+        "esri/layers/FeatureLayer",
+        "esri/rest/support/Query"
+      ], function(FeatureLayer, Query) {
+        const exportBtn = document.getElementById('exportBtn');
+        const buttonText = document.getElementById('buttonText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const statusDiv = document.getElementById('status');
 
-        <button id="exportBtn" class="export-button">
-            <span id="buttonText">Generate PDF Report</span>
-            <span id="loadingSpinner" class="spinner" style="display: none;"></span>
-        </button>
+        exportBtn.addEventListener('click', generateReport);
 
-        <div id="status" class="status-message" style="display: none;"></div>
-    </div>
+        async function generateReport() {
+          try {
+            showStatus('', '');
+            buttonText.textContent = 'Generating...';
+            loadingSpinner.style.display = 'inline-block';
+            exportBtn.disabled = true;
 
-    <script src="https://js.arcgis.com/4.28/"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+            // Your ArcGIS Feature Layer URL
+            const layerUrl = "https://services1.arcgis.com/VVapzOPgBae5joyC/arcgis/rest/services/MDC_Field_Work_Database/FeatureServer/0";
+            const featureLayer = new FeatureLayer({ url: layerUrl });
 
-    <script>
-        require([
-            "esri/layers/FeatureLayer",
-            "esri/rest/support/Query"
-        ], function (FeatureLayer, Query) {
-            
-            // Wait for DOM to be ready
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initializeApp);
-            } else {
-                initializeApp();
+            const queryParams = new Query({
+              where: "1=1",
+              outFields: ["PARENT_Premise_Address", "OBJECTID"],
+              returnGeometry: false,
+              orderByFields: ["OBJECTID ASC"]
+            });
+
+            const results = await featureLayer.queryFeatures(queryParams);
+
+            if (!results.features.length) throw new Error('No data found to export');
+
+            await createAndDownloadPDF(results.features);
+
+            showStatus('PDF downloaded successfully!', 'success');
+          } catch (error) {
+            console.error(error);
+            showStatus('Error: ' + error.message, 'error');
+          } finally {
+            buttonText.textContent = 'Generate PDF Report';
+            loadingSpinner.style.display = 'none';
+            exportBtn.disabled = false;
+          }
+        }
+
+        function createAndDownloadPDF(features) {
+          return new Promise((resolve) => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(20);
+            doc.text('Dashboard Report', 20, 20);
+            doc.setFontSize(12);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 35);
+            doc.text(`Total Records: ${features.length}`, 20, 45);
+            doc.line(20, 50, 190, 50);
+
+            let y = 60;
+            doc.setFontSize(14);
+            doc.text('Data Records:', 20, y);
+            y += 10;
+            doc.setFontSize(10);
+            doc.text('ID', 20, y);
+            doc.text('Address', 50, y);
+            y += 5;
+            doc.line(20, y, 190, y);
+            y += 10;
+
+            features.forEach((feature, idx) => {
+              if (y > 270) { doc.addPage(); y = 20; }
+              const attr = feature.attributes;
+              const id = attr.OBJECTID || (idx + 1);
+              const address = attr.PARENT_Premise_Address || 'N/A';
+              doc.text(id.toString(), 20, y);
+              doc.text(address.length > 50 ? address.substring(0,47)+'...' : address, 50, y);
+              y += 8;
+            });
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+              doc.setPage(i);
+              doc.setFontSize(8);
+              doc.text(`Page ${i} of ${pageCount}`, 170, 290);
             }
 
-            function initializeApp() {
-                const exportBtn = document.getElementById('exportBtn');
-                const buttonText = document.getElementById('buttonText');
-                const loadingSpinner = document.getElementById('loadingSpinner');
-                const statusDiv = document.getElementById('status');
+            const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+            doc.save(`dashboard-report-${timestamp}.pdf`);
+            resolve();
+          });
+        }
 
-                exportBtn.addEventListener('click', generateReport);
-
-                async function generateReport() {
-                    try {
-                        // Reset UI
-                        showStatus('', '');
-                        buttonText.textContent = 'Generating...';
-                        loadingSpinner.style.display = 'inline-block';
-                        exportBtn.disabled = true;
-
-                        // CUSTOMIZE: Replace with your actual layer URL
-                        const layerUrl = "https://services1.arcgis.com/VVapzOPgBae5joyC/arcgis/rest/services/MDC_Field_Work_Database/FeatureServer/0";
-
-                        // Query the data
-                        const featureLayer = new FeatureLayer({
-                            url: layerUrl
-                        });
-
-                        const queryParams = new Query({
-                            where: "1=1", // CUSTOMIZE: Adjust query as needed
-                            outFields: ["PARENT_Premise_Address", "OBJECTID"], // CUSTOMIZE: Add your field names
-                            returnGeometry: false,
-                            orderByFields: ["OBJECTID ASC"] // Optional: order results
-                        });
-
-                        console.log('Querying data...');
-                        const results = await featureLayer.queryFeatures(queryParams);
-                        console.log(`Found ${results.features.length} records`);
-
-                        if (results.features.length === 0) {
-                            throw new Error('No data found to export');
-                        }
-
-                        // Generate and download PDF immediately
-                        await createAndDownloadPDF(results.features);
-
-                        showStatus('PDF downloaded successfully!', 'success');
-
-                    } catch (error) {
-                        console.error('Error generating report:', error);
-                        showStatus(`Error: ${error.message}`, 'error');
-                    } finally {
-                        // Reset button
-                        buttonText.textContent = 'Generate PDF Report';
-                        loadingSpinner.style.display = 'none';
-                        exportBtn.disabled = false;
-                    }
-                }
-
-                function createAndDownloadPDF(features) {
-                    return new Promise((resolve) => {
-                        // Check if jsPDF is available
-                        if (!window.jspdf) {
-                            throw new Error('jsPDF library not loaded');
-                        }
-
-                        const { jsPDF } = window.jspdf;
-                        const doc = new jsPDF();
-
-                        // Header
-                        doc.setFontSize(20);
-                        doc.setFont(undefined, 'bold');
-                        doc.text('Dashboard Report', 20, 20);
-
-                        // Date and summary
-                        doc.setFontSize(12);
-                        doc.setFont(undefined, 'normal');
-                        doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 35);
-                        doc.text(`Total Records: ${features.length}`, 20, 45);
-
-                        // Add a line
-                        doc.line(20, 50, 190, 50);
-
-                        // Data section
-                        let yPosition = 60;
-                        doc.setFontSize(14);
-                        doc.setFont(undefined, 'bold');
-                        doc.text('Data Records:', 20, yPosition);
-                        yPosition += 15;
-
-                        // Table headers
-                        doc.setFontSize(10);
-                        doc.setFont(undefined, 'bold');
-                        doc.text('ID', 20, yPosition);
-                        doc.text('Address', 50, yPosition);
-                        yPosition += 5;
-                        doc.line(20, yPosition, 190, yPosition); // Header underline
-                        yPosition += 10;
-
-                        // Data rows
-                        doc.setFont(undefined, 'normal');
-                        features.forEach((feature, index) => {
-                            if (yPosition > 270) { // New page if needed
-                                doc.addPage();
-                                yPosition = 20;
-                            }
-
-                            const attributes = feature.attributes;
-                            const id = attributes.OBJECTID || (index + 1);
-                            const address = attributes.PARENT_Premise_Address || 'N/A';
-
-                            // Truncate long addresses
-                            const truncatedAddress = address.length > 50 ? 
-                                address.substring(0, 47) + '...' : address;
-
-                            doc.text(id.toString(), 20, yPosition);
-                            doc.text(truncatedAddress, 50, yPosition);
-                            yPosition += 8;
-                        });
-
-                        // Footer
-                        const pageCount = doc.internal.getNumberOfPages();
-                        for (let i = 1; i <= pageCount; i++) {
-                            doc.setPage(i);
-                            doc.setFontSize(8);
-                            doc.text(`Page ${i} of ${pageCount}`, 170, 290);
-                        }
-
-                        // Generate filename with timestamp
-                        const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-                        const filename = `dashboard-report-${timestamp}.pdf`;
-
-                        // Download immediately
-                        doc.save(filename);
-                        
-                        resolve();
-                    });
-                }
-
-                function showStatus(message, type) {
-                    if (!message) {
-                        statusDiv.style.display = 'none';
-                        return;
-                    }
-
-                    statusDiv.textContent = message;
-                    statusDiv.className = `status-message status-${type}`;
-                    statusDiv.style.display = 'block';
-
-                    // Auto-hide success messages after 3 seconds
-                    if (type === 'success') {
-                        setTimeout(() => {
-                            statusDiv.style.display = 'none';
-                        }, 3000);
-                    }
-                }
-            }
-        });
-    </script>
+        function showStatus(message, type) {
+          if (!message) { statusDiv.style.display = 'none'; return; }
+          statusDiv.textContent = message;
+          statusDiv.className = 'status-message ' + (type === 'success' ? 'status-success' : 'status-error');
+          statusDiv.style.display = 'block';
+          if (type === 'success') setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
+        }
+      });
+    });
+  </script>
 </body>
 </html>
